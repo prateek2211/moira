@@ -20,9 +20,10 @@ linters:
   enable:
     - bodyclose
     - deadcode
-    # - errcheck
-    # - goconst
+    - errcheck
+    - goconst
     - gocyclo
+    - golint
     - gosimple
     - govet
     - ineffassign
@@ -31,11 +32,11 @@ linters:
     - staticcheck
     - structcheck
     - typecheck
-    # - unconvert
+    - unconvert
     - unused
     - varcheck
 
 run:
-  timeout: 5m
+  deadline: 5m
   skip-dirs:
     - vendor

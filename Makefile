@@ -16,24 +16,35 @@ GO_VERSION := $(shell go version | cut -d' ' -f3)
 GO_PATH := $(shell go env GOPATH)
 GO111MODULE := on
 GOLANGCI_LINT_VERSION := "v1.21.0"
+REVIEWDOG_VERSION := "v0.9.14"
 
 VENDOR := "SKB Kontur"
 URL := "https://github.com/moira-alert/moira"
 LICENSE := "MIT"
+
+ifndef REVIEWDOG_REPORTER
+override REVIEWDOG_REPORTER = local
+endif
+
 
 SERVICES := "notifier" "api" "checker" "cli"
 
 .PHONY: default
 default: test build
 
+.PHONY: install-reviewdog
+install-reviewdog:
+	wget -O - -q https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh| sh  -s -- -b ${GO_PATH}/bin ${REVIEWDOG_VERSION}
+
+
 .PHONY: install-lint
-install-lint:
+install-lint: install-reviewdog
 	# The recommended way to install golangci-lint into CI/CD
 	wget -O - -q https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GO_PATH}/bin ${GOLANGCI_LINT_VERSION}
 
 .PHONY: lint
 lint:
-	GOGC=50 golangci-lint run
+	GOGC=50 reviewdog -conf=".reviewdog.yml" -reporter="$(REVIEWDOG_REPORTER)" -diff="git diff master"
 
 .PHONY: test
 test:
