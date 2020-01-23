@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	"github.com/moira-alert/moira"
 	"github.com/moira-alert/moira/metric_source/local"
 	"github.com/moira-alert/moira/metric_source/remote"
 
@@ -79,11 +80,30 @@ func getTrigger(writer http.ResponseWriter, request *http.Request) {
 	if triggerID == "testlog" {
 		panic("Test for multi line logs")
 	}
+
 	trigger, err := controller.GetTrigger(database, triggerID)
 	if err != nil {
 		render.Render(writer, request, err)
 		return
 	}
+
+	if _, templated := request.URL.Query()["templated"]; templated && trigger.Desc != nil {
+		triggerData := moira.TriggerData{Desc: *trigger.Desc}
+
+		eventsList, err := controller.GetTriggerEvents(database, triggerID, 0, 100)
+		if err != nil {
+			render.Render(writer, request, err)
+		}
+
+		fmt.Printf("%#v\n", eventsList.List)
+
+		if err := triggerData.PopulateDescription(eventsList.List); err != nil {
+			render.Render(writer, request, api.ErrorRender(err))
+		}
+
+		*trigger.Desc = triggerData.Desc
+	}
+
 	if err := render.Render(writer, request, trigger); err != nil {
 		render.Render(writer, request, api.ErrorRender(err))
 	}
